@@ -39,80 +39,86 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  const fs = require("fs")
-  
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  let TODOS = []
-  
-  function readData() {
-    const data = fs.readFileSync("todos.json", "utf8")
-    TODOS = JSON.parse(data)
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require("fs")
+const path = require("path")
+const cors = require("cors")
+
+const app = express();
+
+app.use(bodyParser.json());
+app.use(cors())
+
+let TODOS = []
+
+function readData() {
+  const data = fs.readFileSync("todos.json", "utf8")
+  TODOS = JSON.parse(data)
+}
+
+function writeData() {
+  fs.writeFileSync("todos.json", JSON.stringify(TODOS))
+}
+
+app.get('/todos', (req, res) => {
+  readData()
+  res.json(TODOS)
+})
+
+app.get('/todos/:id', (req, res) => {
+  readData()
+  let todo = TODOS.find(todo => todo.id == req.params.id)
+  if (todo)
+    return res.json(todo)
+  res.status(404).send("Not found")
+})
+
+app.post('/todos', (req, res) => {
+  if (!["title", "completed", "description"].every(key => key in req.body))
+    return res.status(400).send("Invalid request")
+
+  readData()
+
+  let todo = {
+    id: TODOS.length + 1,
+    ...req.body
   }
-  
-  function writeData() {
-    fs.writeFileSync("todos.json", JSON.stringify(TODOS))
-  }
-  
-  app.get('/todos', (req, res) => {
-    readData()
-    res.json(TODOS)
-  })
-  
-  app.get('/todos/:id', (req, res) => {
-    readData()
-    let todo = TODOS.find(todo => todo.id == req.params.id)
-    if (todo)
-      return res.json(todo)
-    res.status(404).send("Not found")
-  })
-  
-  app.post('/todos', (req, res) => {
-    if (!["title", "completed", "description"].every(key => key in req.body))
-      return res.status(400).send("Invalid request")
-  
-    readData()
-  
-    let todo = {
-      id: TODOS.length + 1,
-      ...req.body
-    }
-    TODOS.push(todo)
-    writeData()
-    res.status(201).json({ id: todo.id })
-  })
-  
-  app.put('/todos/:id', (req, res) => {
-    readData()
-    let todoIndex = TODOS.findIndex(todo => todo.id == req.params.id)
-    if (todoIndex === -1)
-      return res.status(404).send("Not found")
-    Object.assign(TODOS[todoIndex], req.body)
-    writeData()
-    res.send("Updated")
-  })
-  
-  app.delete('/todos/:id', (req, res) => {
-    readData()
-    let todoIndex = TODOS.findIndex(todo => todo.id == req.params.id)
-    if (todoIndex === -1)
-      return res.status(404).send("Not found")
-    TODOS.splice(todoIndex, 1)
-    writeData()
-    res.send("Deleted")
-  })
-  
-  app.use((req, res) => {
-    res.status(404).send()
-  })
-  
-  app.listen(3000, () => {
-    console.log("Server listening on port 3000")
-  })
-  
-  module.exports = app;
-  
+  TODOS.push(todo)
+  writeData()
+  res.status(201).json({ id: todo.id })
+})
+
+app.put('/todos/:id', (req, res) => {
+  readData()
+  let todoIndex = TODOS.findIndex(todo => todo.id == req.params.id)
+  if (todoIndex === -1)
+    return res.status(404).send("Not found")
+  Object.assign(TODOS[todoIndex], req.body)
+  writeData()
+  res.send("Updated")
+})
+
+app.delete('/todos/:id', (req, res) => {
+  readData()
+  let todoIndex = TODOS.findIndex(todo => todo.id == req.params.id)
+  if (todoIndex === -1)
+    return res.status(404).send("Not found")
+  TODOS.splice(todoIndex, 1)
+  writeData()
+  res.send("Deleted")
+})
+
+// app.use((req, res) => {
+//   res.status(404).send()
+// })
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"))
+})
+
+app.listen(3000, () => {
+  console.log("Server listening on port 3000")
+})
+
+module.exports = app;

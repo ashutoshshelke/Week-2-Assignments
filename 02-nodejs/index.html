@@ -1,0 +1,103 @@
+<head>
+    <title>
+        TODO app
+    </title>
+</head>
+<script>
+    function updateData(id) {
+        fetch(`http://localhost:3000/todos/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+                title: document.getElementById("title").value,
+                description: document.getElementById("description").value
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then(resp => {
+            console.log(resp)
+            var mainArea = document.getElementById("mainarea")
+            mainArea.innerHTML = ""
+            getData()
+        })
+    }
+
+    function deleteData(id) {
+        fetch(`http://localhost:3000/todos/${id}`, {
+            method: "DELETE"
+        }).then(data => {
+            console.log(data)
+            var mainArea = document.getElementById("mainarea")
+            mainArea.innerHTML = ""
+            getData()
+        })
+    }
+
+    function getData() {
+        fetch("http://localhost:3000/todos", {
+            method: "GET"
+        }).then(resp => resp.json().then(data => {
+            var mainArea = document.getElementById("mainarea")
+            // mainArea.innerHTML = JSON.stringify(data)
+            for (let i = 0; i < data.length; i++) {
+                var child = document.createElement("div")
+
+                var titleSpan = document.createElement("span")
+                titleSpan.innerHTML = data[i].title
+                child.appendChild(titleSpan)
+
+                var descriptionSpan = document.createElement("span")
+                descriptionSpan.innerHTML = data[i].description
+                child.appendChild(descriptionSpan)
+
+                var deleteButton = document.createElement("button")
+                deleteButton.innerHTML = "Delete"
+                deleteButton.setAttribute("onclick", `deleteData(${data[i].id})`)
+                child.appendChild(deleteButton)
+
+                var selectButton = document.createElement("button")
+                selectButton.innerHTML = "Update"
+                selectButton.setAttribute("onclick", `updateData(${data[i].id})`)
+                child.appendChild(selectButton)
+
+                mainArea.appendChild(child)
+            }
+        }))
+    }
+
+    getData()
+
+    function onPress() {
+        let title = document.getElementById("title").value;
+        let description = document.getElementById("description").value;
+        fetch("http://localhost:3000/todos", {
+            method: "POST",
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                completed: false
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then((resp) => {
+            resp.json().then((data) => {
+                console.log(data)
+                var mainArea = document.getElementById("mainarea")
+                mainArea.innerHTML = ""
+                getData()
+            })
+        })
+    }
+</script>
+
+<body>
+    TODO Title
+    <input type="text" id="title"></input>
+    <br><br>
+    Todo description
+    <input type="text" id="description"></input>
+    <br><br>
+    <button onclick="onPress()">send Todo</button>
+    <div id="mainarea"></div>
+</body>
